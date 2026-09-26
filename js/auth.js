@@ -213,7 +213,7 @@
       var errSenha = Auth.validarNovaSenha(d.senha); if (errSenha) return { ok: false, erro: errSenha };
       var salt = novoSalt();
       var usuario = { id: Dados.novoId('u'), nome: nome, login: login, perfil: d.perfil, salt: salt, hash: hashSenha(d.senha, salt), ativo: true, criadoEm: Date.now(), ultimoLogin: null };
-      Dados.mudar('usuarios', function (l) { l.push(usuario); });
+      try { Dados.mudar('usuarios', function (l) { l.push(usuario); }); } catch (e) { return { ok: false, erro: e.message }; }
       Auth.registrar('usuario_criado', nome + ' (' + login + ' · ' + PERFIS[d.perfil].rotulo + ')');
       return { ok: true, usuario: usuario };
     },
@@ -241,11 +241,13 @@
         var outros = Dados.usuarios.filter(function (u) { return u.id !== id && u.ativo && u.perfil === 'gerente'; }).length;
         if (!outros) return { ok: false, erro: 'Precisa existir pelo menos um gerente ativo. Cadastre outro antes.' };
       }
-      Dados.mudar('usuarios', function (l) {
-        var u = l.filter(function (x) { return x.id === id; })[0];
-        u.nome = nome; u.login = login; u.perfil = perfil; u.ativo = ativo;
-        if (d.senha) { u.salt = novoSalt(); u.hash = hashSenha(d.senha, u.salt); }
-      });
+      try {
+        Dados.mudar('usuarios', function (l) {
+          var u = l.filter(function (x) { return x.id === id; })[0];
+          u.nome = nome; u.login = login; u.perfil = perfil; u.ativo = ativo;
+          if (d.senha) { u.salt = novoSalt(); u.hash = hashSenha(d.senha, u.salt); }
+        });
+      } catch (e) { return { ok: false, erro: e.message }; }
       Auth.registrar('usuario_alterado', nome + ' (' + login + ')' + (d.senha ? ' (senha redefinida)' : '') + (ativo ? '' : ' (desativado)'));
       return { ok: true };
     },
