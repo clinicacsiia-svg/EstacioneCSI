@@ -307,6 +307,10 @@ table.tabela { width: 100%; border-collapse: collapse; font-size: .92rem; }
 .login-marca { text-align: center; margin-bottom: 18px; }
 .login-marca .logo { font-size: 3rem; line-height: 1; }
 .login-marca h1 { font-size: 1.6rem; color: var(--azul-800); margin-top: 6px; }
+.login-status {
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  margin-top: 14px; font-size: .8rem; color: var(--cinza-500);
+}
 .campo-senha { display: flex; gap: 8px; }
 .campo-senha input { flex: 1; min-width: 0; }
 .campo-senha .btn { flex: 0 0 auto; min-height: 48px; }
