@@ -1,0 +1,56 @@
+name: Publicar no GitHub Pages
+
+# Toda vez que você salva (commit) na branch main, o site é conferido e publicado sozinho.
+# Só vão para o ar as telas (html, css, js). O Apps Script (apps-script/) e os testes ficam de fora: o Apps Script você cola na planilha do Google.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: {}   # botão "Run workflow" na aba Actions
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  publicar:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Conferir a sintaxe do JavaScript (evita publicar o site quebrado)
+        run: |
+          for f in js/*.js; do node --check "$f"; done
+          cp apps-script/Codigo.gs "$RUNNER_TEMP/Codigo.js"
+          node --check "$RUNNER_TEMP/Codigo.js"
+
+      - name: Avisar se o endereço do Google ainda não foi configurado
+        run: |
+          if grep -Eq "ESTACIONA_API *= *'https://script\.google\.com/macros/s/[^']+/exec'" js/config.js; then
+            echo "js/config.js aponta para o Google Apps Script."
+          else
+            echo "::warning file=js/config.js::ESTACIONA_API está vazio: o site vai abrir, mas sem servidor (nem login). Cole o endereço /exec do Apps Script (veja apps-script/LEIA-ME.md)."
+          fi
+
+      - name: Montar o site (só o que o navegador precisa)
+        run: |
+          mkdir _site
+          cp ./*.html _site/
+          cp -r css js _site/
+          touch _site/.nojekyll
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+      - id: deploy
+        uses: actions/deploy-pages@v4
