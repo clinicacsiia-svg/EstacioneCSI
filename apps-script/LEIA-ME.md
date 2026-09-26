@@ -128,6 +128,7 @@ O fluxo confere a sintaxe do JavaScript antes de publicar e **avisa** (aviso ama
 1. Abra o endereço do site. Entre com **`admin`** e a senha da Parte 2.
    - A primeira chamada ao Google pode levar uns 5–10 s (o Google "acorda" o script). Depois fica na faixa de 1–3 s.
 2. Na tela do administrador: **troque a senha do admin** e cadastre gerentes, caixas e manobristas.
+   - Em cada usuário (inclusive o admin) dá pra preencher um **e-mail de recuperação** opcional: é ele que recebe o código de 6 dígitos do botão **"Esqueci minha senha"** na tela de entrada. Sem e-mail cadastrado, esse usuário só recupera a senha pelo menu da planilha (Parte 2/tabela abaixo).
 3. Conferir na planilha: as abas `usuarios`, `log`, `config` já têm linhas.
 4. Painel da TV: `.../painel.html` (não pede login, só mostra números de ticket).
 5. Celular: abra o endereço e use *Adicionar à tela inicial*. Como é HTTPS, a **impressora Bluetooth** funciona.
@@ -141,7 +142,7 @@ Se você já tinha dados no sistema antigo (servidor Python): baixe o backup por
 | Mudou… | Faça |
 |---|---|
 | Telas (`*.html`, `js/`, `css/`) | `git add .` → `git commit -m "..."` → `git push`. O GitHub publica sozinho. |
-| `Codigo.gs` | Cole o arquivo novo no editor → **Implantar → Gerenciar implantações → ✏️ Editar → Versão: Nova versão → Implantar**. O endereço `/exec` continua o mesmo. **Sem essa "Nova versão", o Google continua rodando o código antigo.** |
+| `Codigo.gs` | Cole o arquivo novo no editor → **Implantar → Gerenciar implantações → ✏️ Editar → Versão: Nova versão → Implantar**. O endereço `/exec` continua o mesmo. **Sem essa "Nova versão", o Google continua rodando o código antigo.** A partir da versão com "Esqueci minha senha", o script também **envia e-mail** (`MailApp`): na primeira execução depois de colar o código novo, rode qualquer função no editor (ex.: `instalar`) para autorizar essa permissão extra, senão o envio falha silenciosamente. |
 | Senha do admin esquecida | Na planilha: menu **Estacionamento CSI → Redefinir senha do admin**. |
 | Backup na hora | Menu **Estacionamento CSI → Fazer backup agora** (vai para a pasta `EstacionaMais - backups` do Drive). |
 
@@ -177,6 +178,7 @@ Além disso a planilha tem **Arquivo → Histórico de versões**.
 | Login mostra "Servidor ainda não configurado" | `js/config.js` ainda está vazio: cole o endereço `/exec` (Parte 4.1), faça commit e push. |
 | Site do GitHub abre em branco / 404 | O fluxo da aba **Actions** ainda não terminou, ou **Settings → Pages → Source** não está em **GitHub Actions**. |
 | Erro de autorização do Drive ao restaurar/zerar | Rode `instalar` de novo e autorize. O sistema se recusa a substituir os dados se não conseguir guardar a cópia `antes-de-restaurar`. |
+| "Esqueci minha senha" não chega o e-mail | O usuário não tem e-mail de recuperação cadastrado (Administração → Usuários), ou o script ainda não foi autorizado a enviar e-mail (rode qualquer função no editor uma vez após colar o `Codigo.gs` novo). Veja **Execuções** no editor para o erro exato. Por segurança a tela sempre diz "código enviado", mesmo sem e-mail cadastrado. |
 
 ---
 

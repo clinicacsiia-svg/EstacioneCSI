@@ -52,11 +52,12 @@
   function editarUsuario(id) {
     const u0 = id ? Dados.usuarios.find(x => x.id === id) : null;
     const ehAdmin = !!u0 && u0.perfil === 'admin';
+    const campoEmail = `<div class="campo mb"><label class="rotulo" for="us-email">E-mail de recuperação (opcional)</label><input id="us-email" type="email" maxlength="80" value="${esc(u0 ? (u0.email || '') : '')}" autocomplete="email"><div class="dica">Usado só pelo botão "Esqueci minha senha" da tela de entrada.</div></div>`;
     const dadosPessoa = ehAdmin
-      ? `<p class="mudo" style="margin-top:0">Usuário de entrada: <b>${esc(u0.login)}</b>. Do administrador só a senha pode ser alterada.</p>`
+      ? `<p class="mudo" style="margin-top:0">Usuário de entrada: <b>${esc(u0.login)}</b>. Do administrador só a senha e o e-mail de recuperação podem ser alterados.</p>` + campoEmail
       : `<div class="campo mb"><label class="rotulo" for="us-nome">Nome (aparece nas telas e na auditoria)</label><input id="us-nome" type="text" maxlength="30" value="${esc(u0 ? u0.nome : '')}" data-foco autocomplete="off"></div>
         <div class="campo mb"><label class="rotulo" for="us-login">Usuário (para entrar no sistema)</label><input id="us-login" type="text" maxlength="20" value="${esc(u0 ? u0.login : '')}" autocomplete="off" autocapitalize="none" spellcheck="false"></div>
-        <div class="campo mb"><label class="rotulo" for="us-perfil">Perfil</label><select id="us-perfil">${u0 ? '' : '<option value="">Escolha…</option>'}${Auth.PERFIS_OPERACIONAIS.map(p => `<option value="${p}" ${u0 && u0.perfil === p ? 'selected' : ''}>${esc(Auth.PERFIS[p].rotulo)}</option>`).join('')}</select></div>`;
+        <div class="campo mb"><label class="rotulo" for="us-perfil">Perfil</label><select id="us-perfil">${u0 ? '' : '<option value="">Escolha…</option>'}${Auth.PERFIS_OPERACIONAIS.map(p => `<option value="${p}" ${u0 && u0.perfil === p ? 'selected' : ''}>${esc(Auth.PERFIS[p].rotulo)}</option>`).join('')}</select></div>` + campoEmail;
     Ui.modal({
       titulo: ehAdmin ? 'Senha do administrador' : (u0 ? 'Editar usuário' : 'Novo usuário'), largura: 'sm',
       html: dadosPessoa +
@@ -74,11 +75,11 @@
             let r;
             if (u0) {
               r = Auth.atualizarUsuario(id, {
-                nome: val('#us-nome'), login: val('#us-login'), perfil: val('#us-perfil'),
+                nome: val('#us-nome'), login: val('#us-login'), perfil: val('#us-perfil'), email: val('#us-email'),
                 senha: senha || undefined, ativo: ehAdmin ? undefined : $('#us-ativo', c).checked
               });
             } else {
-              r = Auth.criarUsuario({ nome: val('#us-nome'), login: val('#us-login'), perfil: val('#us-perfil'), senha: senha });
+              r = Auth.criarUsuario({ nome: val('#us-nome'), login: val('#us-login'), perfil: val('#us-perfil'), email: val('#us-email'), senha: senha });
             }
             if (!r.ok) { $('#us-erro', c).textContent = r.erro; return; }
             m.fechar(); Ui.toast('Usuário salvo.'); atualizarUsuarios();

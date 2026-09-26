@@ -42,6 +42,8 @@ var BACKUPS_GUARDADOS = 30;
 var PASTA_BACKUP = 'EstacionaMais - backups';
 var ALFABETO_SENHA = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789';
 var ESCRITA = { usuarios: ['admin'], config: ['admin', 'gerente'] }; // quem grava em cada coleção (as demais: qualquer logado)
+var RECUP_TTL = 900;              // segundos (15 min): validade do código de recuperação de senha
+var RECUP_COOLDOWN = 60;          // segundos: intervalo mínimo entre dois pedidos de código para o mesmo login
 
 // ---------- Layout das abas ----------
 // Colunas 1 e 2 são sempre: id e json. O resto é só para você ler/filtrar/somar na planilha.
@@ -81,9 +83,9 @@ var LAYOUT = {
     }
   },
   usuarios: {
-    cab: ['id', 'json', 'Nome', 'Login', 'Perfil', 'Ativo', 'Último login'],
-    fmt: ['@', '@', '@', '@', '@', '@', DATA_HORA],
-    extra: function (u) { return [tx_(u.nome), tx_(u.login), tx_(u.perfil), u.ativo ? 'Sim' : 'Não', dt_(u.ultimoLogin)]; }
+    cab: ['id', 'json', 'Nome', 'Login', 'Perfil', 'Ativo', 'Último login', 'E-mail de recuperação'],
+    fmt: ['@', '@', '@', '@', '@', '@', DATA_HORA, '@'],
+    extra: function (u) { return [tx_(u.nome), tx_(u.login), tx_(u.perfil), u.ativo ? 'Sim' : 'Não', dt_(u.ultimoLogin), tx_(u.email)]; }
   },
   log: {
     cab: ['id', 'json', 'Quando', 'Usuário', 'Perfil', 'Ação', 'Detalhe'],
@@ -849,6 +851,8 @@ function rotear_(metodo, rota, token, corpo) {
     if (caminho === '/api/login') return rotaLogin_(corpo);
     if (caminho === '/api/logout') { sessaoEncerrar_(token); return ok_({ ok: true }); }
     if (caminho === '/api/senha/verificar') { exigir_(token, true); return rotaVerificarSenha_(corpo); }
+    if (caminho === '/api/senha/recuperar') return rotaPedirRecuperacao_(corpo);
+    if (caminho === '/api/senha/redefinir-recuperacao') return rotaRedefinirComCodigo_(corpo);
     if (caminho === '/api/restaurar') {
       exigir_(token, true, ['gerente']);
       var dados = corpo.dados;
@@ -908,6 +912,76 @@ function rotaVerificarSenha_(d) {
     }
     if (!alvo.ativo) return ok_({ ok: false, erro: 'Usuário desativado. Fale com o administrador.' });
     limSucesso_(chave);
+    return ok_({ ok: true });
+  });
+}
+
+// ---------- Recuperação de senha por e-mail ----------
+/** Código numérico de 6 dígitos (aleatório, não previsível). */
+function codigoRecuperacao_() {
+  var b = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, Utilities.getUuid() + agora_(), Utilities.Charset.UTF_8);
+  var n = ((b[0] & 255) * 65536 + (b[1] & 255) * 256 + (b[2] & 255)) % 1000000;
+  return ('000000' + n).slice(-6);
+}
+
+/**
+ * Pedido de código (tela "Esqueci minha senha"). Sempre responde { ok:true }, exista ou não o
+ * usuário/e-mail: assim ninguém descobre por aqui quais logins existem no sistema. Só manda o
+ * e-mail de verdade se o usuário existir, estiver ativo e tiver um e-mail de recuperação cadastrado.
+ */
+function rotaPedirRecuperacao_(d) {
+  var login = String(d.login || '').trim().toLowerCase().slice(0, 40);
+  // Só o que mexe em cache/planilha fica sob a trava; o envio do e-mail (rede, pode demorar
+  // segundos) roda depois, solta, para não travar o resto do sistema (tickets, pagamentos...)
+  // enquanto o Google manda o e-mail.
+  var alvo = null, codigo = null;
+  comTrava_(function () {
+    var chaveCooldown = 'rc-pedido:' + login;
+    if (!login || cGet_(chaveCooldown)) return;
+    cPut_(chaveCooldown, '1', RECUP_COOLDOWN);
+    var u = usuarioPor_('login', login);
+    if (u && u.ativo && u.email) {
+      codigo = codigoRecuperacao_();
+      cPut_('rc:' + login, JSON.stringify({ uid: u.id, codigo: codigo }), RECUP_TTL);
+      alvo = u;
+    }
+  });
+  if (alvo) {
+    try {
+      MailApp.sendEmail(alvo.email, 'Código para redefinir sua senha — ' + nomeEstabelecimento_(),
+        'Olá, ' + alvo.nome + '.\n\n' +
+        'Alguém pediu para redefinir a senha do usuário "' + alvo.login + '" no ' + nomeEstabelecimento_() + '.\n\n' +
+        'Código: ' + codigo + '\n\n' +
+        'Ele vale por 15 minutos e só pode ser usado uma vez. Se não foi você, ignore este e-mail: sua senha continua a mesma.');
+      registrarLog_(alvo, 'recuperacao_pedida', alvo.nome);
+    } catch (e) { console.error('Falha ao enviar e-mail de recuperação: ' + (e && e.message)); }
+  }
+  return ok_({ ok: true });
+}
+
+/** Confere o código e troca a senha. Bloqueia tentativas erradas do mesmo jeito que o login. */
+function rotaRedefinirComCodigo_(d) {
+  var login = String(d.login || '').trim().toLowerCase().slice(0, 40);
+  var codigo = String(d.codigo || '').trim();
+  var senha = String(d.senha || '').slice(0, 200);
+  return comTrava_(function () {
+    var chave = 'rc-tent:' + login, espera = limRestante_(chave);
+    if (espera) return ok_({ ok: false, bloqueado: true, erro: 'Muitas tentativas. Aguarde ' + espera + ' s.' });
+    if (senha.length < 6 || senha.length > 40) return ok_({ ok: false, erro: 'A senha deve ter de 6 a 40 caracteres.' });
+    var raw = cGet_('rc:' + login), reg = null;
+    try { reg = raw ? JSON.parse(raw) : null; } catch (e) { reg = null; }
+    if (!reg || !/^\d{6}$/.test(codigo) || !igual_(reg.codigo, codigo)) {
+      limFalha_(chave);
+      return ok_({ ok: false, erro: 'Código incorreto ou expirado.' });
+    }
+    limSucesso_(chave);
+    cDel_('rc:' + login);
+    var atual = usuarioPor_('id', reg.uid);
+    if (!atual || !atual.ativo) return ok_({ ok: false, erro: 'Usuário não encontrado ou inativo.' });
+    var salt = novoSalt_(), novo = clone_(atual);
+    novo.salt = salt; novo.hash = hashSenha_(senha, salt);
+    confirmar_('usuarios', { t: 'm', up: [novo], rm: [] });
+    registrarLog_(novo, 'senha_recuperada', novo.nome);
     return ok_({ ok: true });
   });
 }

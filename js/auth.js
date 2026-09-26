@@ -168,6 +168,12 @@
   function validarLogin(s) {
     return /^[a-z0-9._-]{3,20}$/.test(s) ? null : 'O usuário deve ter de 3 a 20 caracteres (letras sem acento, números, ponto, hífen ou _).';
   }
+  /** E-mail de recuperação de senha: opcional, mas se informado precisa ter um formato válido. */
+  function validarEmail(s) {
+    var e = String(s || '').trim().toLowerCase();
+    if (!e) return { ok: true, email: '' };
+    return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e) ? { ok: true, email: e } : { ok: false, erro: 'E-mail inválido.' };
+  }
 
   var _aut = null; // autorização de gerente em memória (vale 60 s, uso único por ação)
 
@@ -211,8 +217,9 @@
       if (Dados.usuarios.some(function (u) { return u.login === login; })) return { ok: false, erro: 'Já existe um usuário com esse login.' };
       if (PERFIS_OPERACIONAIS.indexOf(d.perfil) === -1) return { ok: false, erro: 'Escolha o perfil do usuário.' };
       var errSenha = Auth.validarNovaSenha(d.senha); if (errSenha) return { ok: false, erro: errSenha };
+      var email = validarEmail(d.email); if (!email.ok) return { ok: false, erro: email.erro };
       var salt = novoSalt();
-      var usuario = { id: Dados.novoId('u'), nome: nome, login: login, perfil: d.perfil, salt: salt, hash: hashSenha(d.senha, salt), ativo: true, criadoEm: Date.now(), ultimoLogin: null };
+      var usuario = { id: Dados.novoId('u'), nome: nome, login: login, perfil: d.perfil, email: email.email, salt: salt, hash: hashSenha(d.senha, salt), ativo: true, criadoEm: Date.now(), ultimoLogin: null };
       try { Dados.mudar('usuarios', function (l) { l.push(usuario); }); } catch (e) { return { ok: false, erro: e.message }; }
       Auth.registrar('usuario_criado', nome + ' (' + login + ' · ' + PERFIS[d.perfil].rotulo + ')');
       return { ok: true, usuario: usuario };
@@ -228,6 +235,9 @@
       var login = !ehAdmin && d.login !== undefined ? normalizarLogin(d.login) : alvo.login;
       var perfil = !ehAdmin && d.perfil !== undefined ? d.perfil : alvo.perfil;
       var ativo = !ehAdmin && d.ativo !== undefined ? !!d.ativo : alvo.ativo;
+      // o e-mail de recuperação pode ser alterado por qualquer perfil, inclusive o admin
+      var email = d.email !== undefined ? validarEmail(d.email) : { ok: true, email: alvo.email || '' };
+      if (!email.ok) return { ok: false, erro: email.erro };
       if (nome.length < 2 || nome.length > 30) return { ok: false, erro: 'Informe um nome de 2 a 30 letras.' };
       if (!ehAdmin) {
         var errLogin = validarLogin(login); if (errLogin) return { ok: false, erro: errLogin };
@@ -244,7 +254,7 @@
       try {
         Dados.mudar('usuarios', function (l) {
           var u = l.filter(function (x) { return x.id === id; })[0];
-          u.nome = nome; u.login = login; u.perfil = perfil; u.ativo = ativo;
+          u.nome = nome; u.login = login; u.perfil = perfil; u.ativo = ativo; u.email = email.email;
           if (d.senha) { u.salt = novoSalt(); u.hash = hashSenha(d.senha, u.salt); }
         });
       } catch (e) { return { ok: false, erro: e.message }; }
@@ -311,6 +321,26 @@
       var u = Auth.atual();
       if (!u) return { ok: false, erro: 'O navegador não guardou o login. Libere o armazenamento deste site (não use aba anônima restrita) e tente de novo.' };
       return { ok: true, usuario: u };
+    },
+
+    /**
+     * "Esqueci minha senha": pede ao servidor um código de 6 dígitos para o e-mail de
+     * recuperação do usuário. O servidor sempre responde ok:true (nunca revela se o usuário
+     * ou o e-mail existem) — o código só é enviado de verdade quando ambos existem.
+     */
+    pedirRecuperacaoSenha: function (login) {
+      var r = Dados.requisitar('POST', '/api/senha/recuperar', { login: normalizarLogin(login) });
+      if (r.status === 0) return { ok: false, erro: 'Não foi possível falar com o servidor. Confira a conexão.' };
+      return { ok: true };
+    },
+
+    /** Troca a senha usando o código de 6 dígitos recebido por e-mail. */
+    redefinirSenhaComCodigo: function (login, codigo, novaSenha) {
+      var errSenha = Auth.validarNovaSenha(novaSenha); if (errSenha) return { ok: false, erro: errSenha };
+      var r = Dados.requisitar('POST', '/api/senha/redefinir-recuperacao', { login: normalizarLogin(login), codigo: String(codigo || '').trim(), senha: novaSenha });
+      if (r.status === 0) return { ok: false, erro: 'Não foi possível falar com o servidor. Confira a conexão.' };
+      if (!r.corpo || !r.corpo.ok) return { ok: false, bloqueado: !!(r.corpo && r.corpo.bloqueado), erro: (r.corpo && r.corpo.erro) || 'Não foi possível redefinir a senha.' };
+      return { ok: true };
     },
 
     sair: function (porInatividade, semAcesso) {
