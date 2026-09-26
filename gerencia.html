@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#1e3a8a">
+  <title>Estacionamento CSI · Gerência</title>
+  <link rel="stylesheet" href="css/estilo.css">
+</head>
+<body class="app oculto">
+  <header id="topo" class="topo"></header>
+
+  <div class="layout-gerencia">
+    <nav class="menu-lateral" id="menu" aria-label="Seções da gerência">
+      <button type="button" data-sec="visao">📊 Visão geral</button>
+      <button type="button" data-sec="patio">🅿️ Pátio agora</button>
+      <button type="button" data-sec="historico">🗂️ Histórico</button>
+      <button type="button" data-sec="caixas">🧾 Caixas</button>
+      <button type="button" data-sec="mensalistas">📅 Mensalistas</button>
+      <button type="button" data-sec="config">⚙️ Configurações</button>
+      <button type="button" data-sec="auditoria">🔎 Auditoria</button>
+      <button type="button" data-sec="backup">💾 Backup</button>
+    </nav>
+    <main class="conteudo">
+      <div class="col-total" id="secao"></div>
+    </main>
+  </div>
+
+  <div id="toasts" aria-live="polite"></div>
+
+  <script src="js/config.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/dados.js"></script>
+  <script src="js/regras.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/operacoes.js"></script>
+  <script src="js/impressao.js"></script>
+  <script src="js/ficha.js"></script>
+  <script src="js/gerencia.js"></script>
+</body>
+</html>

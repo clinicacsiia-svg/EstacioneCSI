@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#1e3a8a">
+  <title>Estacionamento CSI · Caixa</title>
+  <link rel="stylesheet" href="css/estilo.css">
+</head>
+<body class="app oculto">
+  <header id="topo" class="topo"></header>
+
+  <main class="conteudo">
+    <div class="col-larga">
+
+      <div class="abas-topo" role="tablist" aria-label="Seções do caixa">
+        <button type="button" data-aba="receber" class="ativo" role="tab">💵 Receber <span class="contador zero" id="c-receber">0</span></button>
+        <button type="button" data-aba="atendimento" role="tab">🚗 Na fila <span class="contador zero" id="c-atend">0</span></button>
+        <button type="button" data-aba="caixa" role="tab">🧾 Meu caixa <span class="ponto" id="ponto-caixa"></span></button>
+      </div>
+
+      <!-- ===== RECEBER ===== -->
+      <section id="aba-receber" class="aba col-larga">
+        <div id="aviso-caixa"></div>
+        <div class="card">
+          <label class="rotulo" for="busca">Bipe o ticket ou digite a placa / número do ticket</label>
+          <input id="busca" class="input-busca" type="search" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="Ex.: 1042 ou ABC1D23" data-foco>
+          <div class="dica" id="busca-dica">Pressione ENTER para abrir o pagamento.</div>
+        </div>
+        <div class="lista" id="lista-receber"></div>
+      </section>
+
+      <!-- ===== NA FILA (pagos, aguardando/em entrega) ===== -->
+      <section id="aba-atendimento" class="aba col-larga" hidden>
+        <div class="lista" id="lista-atend"></div>
+      </section>
+
+      <!-- ===== MEU CAIXA ===== -->
+      <section id="aba-caixa" class="aba col-larga" hidden>
+        <div id="conteudo-caixa"></div>
+      </section>
+    </div>
+  </main>
+
+  <div id="toasts" aria-live="polite"></div>
+
+  <script src="js/config.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/dados.js"></script>
+  <script src="js/regras.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/operacoes.js"></script>
+  <script src="js/impressao.js"></script>
+  <script src="js/ficha.js"></script>
+  <script src="js/nota.js"></script>
+  <script src="js/caixa.js"></script>
+</body>
+</html>

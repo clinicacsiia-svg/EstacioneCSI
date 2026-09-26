@@ -1,0 +1,22 @@
+# DADOS DE CLIENTES (CPF/CNPJ, placas, senhas em hash): NUNCA no GitHub.
+# (Os dados ficam na planilha do Google; estas linhas protegem contra backups baixados por engano.)
+dados/
+backups/
+backup-*.json
+diario-*.json
+manual-*.json
+antes-de-restaurar-*.json
+senha-admin-inicial.txt
+
+# Certificados e segredos
+*.pfx
+*.p12
+*.pem
+*.key
+.env
+
+# Editor / sistema
+.vscode/
+.idea/
+Thumbs.db
+.DS_Store

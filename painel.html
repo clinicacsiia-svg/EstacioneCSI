@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0b1220">
+  <title>Estacionamento CSI · Painel do cliente</title>
+  <link rel="stylesheet" href="css/estilo.css">
+</head>
+<body class="painel">
+  <!-- Tela para TV/monitor voltado ao cliente. Não pede login e mostra SÓ o número do ticket (nunca a placa). -->
+  <header class="painel-topo">
+    <h1 id="p-nome">Estacionamento CSI</h1>
+    <div class="painel-relogio" data-relogio aria-label="Hora atual">--:--:--</div>
+  </header>
+
+  <main class="painel-cols">
+    <section class="painel-col" aria-labelledby="h-prep">
+      <h2 id="h-prep">⏳ Preparando seu veículo</h2>
+      <div class="painel-lista" id="p-prep"></div>
+    </section>
+    <section class="painel-col destaque" aria-labelledby="h-cam">
+      <h2 id="h-cam">🚗 A caminho da retirada</h2>
+      <div class="painel-lista" id="p-cam" aria-live="polite"></div>
+    </section>
+  </main>
+
+  <footer class="painel-rodape" id="p-msg"></footer>
+
+  <script src="js/config.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/regras.js"></script>
+  <script src="js/ui.js"></script>
+  <script>
+    (function () {
+      'use strict';
+      Ui.iniciarRelogios();
+
+      function lista(ids, vazio) {
+        if (!ids.length) return '<div class="painel-vazio">' + vazio + '</div>';
+        return ids.slice(0, 24).map(function (id) { return '<div class="painel-ticket">#' + Ui.esc(id) + '</div>'; }).join('') +
+          (ids.length > 24 ? '<div class="painel-vazio">+' + (ids.length - 24) + '</div>' : '');
+      }
+
+      function desenhar(p) {
+        document.getElementById('p-nome').textContent = p.estabelecimento;
+        document.getElementById('p-msg').textContent = p.mensagem || '';
+        document.getElementById('p-prep').innerHTML = lista(p.preparando, 'Nenhum veículo na fila');
+        document.getElementById('p-cam').innerHTML = lista(p.aCaminho, 'Aguardando…');
+        document.title = p.estabelecimento + ' · Painel (' + p.aCaminho.length + ' a caminho)';
+      }
+
+      // Não pede login: o servidor entrega só os números dos tickets (nunca a placa). Atualiza a cada 3 s.
+      var ultimo = '';
+      function atualizar() {
+        Api.buscar('/api/painel')
+          .then(function (r) { return r.ok ? r.json() : null; })
+          .then(function (p) {
+            if (!p) return;
+            var chave = JSON.stringify(p);
+            if (chave !== ultimo) { ultimo = chave; desenhar(p); }
+          })
+          .catch(function () { /* sem rede: mantém o que está na tela */ });
+      }
+      setInterval(atualizar, Api.intervaloPainelMs);
+      atualizar();
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#1e3a8a">
+  <title>Estacionamento CSI · Manobrista</title>
+  <link rel="stylesheet" href="css/estilo.css">
+</head>
+<body class="app com-tabbar oculto">
+  <header id="topo" class="topo"></header>
+
+  <main class="conteudo">
+
+    <!-- ===== ABA: NOVA ENTRADA ===== -->
+    <section id="aba-entrada" class="aba">
+      <form id="form-entrada" class="col-centro" autocomplete="off" novalidate>
+
+        <div id="ultimo-ticket" class="card ok" hidden></div>
+
+        <div class="card">
+          <label class="rotulo" for="placa">Placa do veículo</label>
+          <input id="placa" class="input-placa" type="text" maxlength="10" autocapitalize="characters"
+                 autocomplete="off" autocorrect="off" spellcheck="false" enterkeyhint="done" placeholder="ABC-1234">
+          <div id="placa-info" class="dica" aria-live="polite"></div>
+          <label class="check" id="linha-livre" hidden><input type="checkbox" id="placa-livre"> Placa fora do padrão (estrangeira, etc.)</label>
+        </div>
+
+        <div class="card">
+          <div class="rotulo">Tipo de veículo</div>
+          <div class="grade-3" id="grupo-categoria"></div>
+        </div>
+
+        <div class="card">
+          <label class="rotulo" for="modelo">Modelo <span class="mudo">(ajuda na entrega)</span></label>
+          <input id="modelo" type="text" list="lista-modelos" maxlength="30" enterkeyhint="next" placeholder="Ex.: Onix, HB20, Strada">
+          <datalist id="lista-modelos"></datalist>
+          <div class="rotulo mt">Cor</div>
+          <div class="chips" id="grupo-cor"></div>
+        </div>
+
+        <div class="card">
+          <div class="rotulo">Onde o carro vai ficar</div>
+          <div class="grade-2" id="grupo-patio"></div>
+          <label class="rotulo mt" for="vaga">Vaga / posição <span class="mudo">(opcional)</span></label>
+          <input id="vaga" type="text" maxlength="10" autocapitalize="characters" enterkeyhint="next" placeholder="Ex.: A-12">
+        </div>
+
+        <details class="card" id="det-extras">
+          <summary>Avarias e observações <span class="mudo" id="resumo-extras">· nenhuma marcada</span></summary>
+          <div class="rotulo mt">Marque o que já existe no veículo</div>
+          <div class="chips" id="grupo-avarias"></div>
+          <label class="rotulo mt" for="obs">Observação</label>
+          <textarea id="obs" maxlength="200" placeholder="Ex.: risco na porta direita"></textarea>
+          <label class="rotulo mt" for="telefone">Telefone do cliente <span class="mudo">(opcional)</span></label>
+          <input id="telefone" type="tel" inputmode="tel" maxlength="15" enterkeyhint="done" placeholder="(11) 99999-9999">
+        </details>
+
+        <div class="barra-acao">
+          <button type="submit" class="btn btn-sucesso btn-enorme" id="btn-imprimir">🖨️ IMPRIMIR TICKET</button>
+        </div>
+      </form>
+    </section>
+
+    <!-- ===== ABA: BUSCAR (fila) ===== -->
+    <section id="aba-fila" class="aba" hidden>
+      <div class="col-centro">
+        <h2 class="titulo-secao">🔑 Para buscar <span class="contador zero" id="cont-fila">0</span></h2>
+        <div class="lista" id="lista-fila"></div>
+        <h2 class="titulo-secao mt">🏃 A caminho <span class="contador zero" id="cont-caminho">0</span></h2>
+        <div class="lista" id="lista-caminho"></div>
+      </div>
+    </section>
+
+    <!-- ===== ABA: PÁTIO ===== -->
+    <section id="aba-patio" class="aba" hidden>
+      <div class="col-centro">
+        <div class="card">
+          <label class="rotulo" for="busca-patio">Procurar veículo (placa, ticket ou modelo)</label>
+          <input id="busca-patio" type="search" class="input-busca" autocomplete="off" autocapitalize="characters" placeholder="ABC ou 1042">
+          <div class="chips mt" id="filtro-patio"></div>
+        </div>
+        <div class="lista" id="lista-patio"></div>
+      </div>
+    </section>
+  </main>
+
+  <nav class="tabbar" aria-label="Seções">
+    <button type="button" data-aba="entrada" class="ativo"><span class="emoji" aria-hidden="true">➕</span>Entrada</button>
+    <button type="button" data-aba="fila"><span class="emoji" aria-hidden="true">🔑</span>Buscar<span class="marca-num zero" id="marca-fila">0</span></button>
+    <button type="button" data-aba="patio"><span class="emoji" aria-hidden="true">🅿️</span>Pátio<span class="marca-num zero" id="marca-patio" style="background:#475569">0</span></button>
+  </nav>
+
+  <div id="toasts" aria-live="polite"></div>
+
+  <script src="js/config.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/dados.js"></script>
+  <script src="js/regras.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/operacoes.js"></script>
+  <script src="js/impressao.js"></script>
+  <script src="js/ficha.js"></script>
+  <script src="js/manobrista.js"></script>
+</body>
+</html>
