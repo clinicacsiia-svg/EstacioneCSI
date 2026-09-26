@@ -64,6 +64,19 @@ O script roda **com a sua conta** ("Executar como: Eu"), então ninguém mais pr
 O que o `instalar` fez: criou as abas, ajustou o fuso para `America/Bahia`, criou o usuário `admin`, e ligou o **backup diário** (todo dia por volta das 3h, guarda os últimos 30 na pasta **`EstacionaMais - backups`** do seu Drive).
 Pode rodar de novo sem medo — ele não duplica nada.
 
+### (Opcional) Código mestre de emergência do admin
+
+Além da senha inicial e do "Redefinir senha do admin" pelo menu da planilha, dá pra configurar um **código mestre** que redefine a senha do admin direto pela tela de login (botão "Esqueci minha senha" → "Sou o administrador e não tenho e-mail cadastrado"), sem precisar abrir a planilha. Útil se você perder o acesso à conta Google também.
+
+Esse código **nunca fica no código-fonte** (o repositório é público): ele mora só nas Propriedades do seu projeto Apps Script.
+
+1. No editor: ⚙️ **Configurações do projeto** (ícone de engrenagem, menu lateral).
+2. Em **Propriedades do script** → **Adicionar propriedade do script**.
+3. Nome: `CODIGO_MESTRE_ADMIN`. Valor: algo **longo e aleatório** (não use "8865" nem nada curto/adivinhável — pense em 20+ caracteres, tipo uma senha de gerenciador de senhas). Salvar.
+4. Guarde esse valor num lugar seguro fora do sistema (gerenciador de senhas, cofre físico). Quem tiver esse código consegue redefinir a senha do admin — só a do admin, nada além disso.
+
+Sem essa propriedade configurada, o botão de emergência simplesmente não funciona (sempre "código incorreto") — é opcional.
+
 ---
 
 ## PARTE 3 — Publicar o servidor (Implantar)
@@ -179,6 +192,7 @@ Além disso a planilha tem **Arquivo → Histórico de versões**.
 | Site do GitHub abre em branco / 404 | O fluxo da aba **Actions** ainda não terminou, ou **Settings → Pages → Source** não está em **GitHub Actions**. |
 | Erro de autorização do Drive ao restaurar/zerar | Rode `instalar` de novo e autorize. O sistema se recusa a substituir os dados se não conseguir guardar a cópia `antes-de-restaurar`. |
 | "Esqueci minha senha" não chega o e-mail | O usuário não tem e-mail de recuperação cadastrado (Administração → Usuários), ou o script ainda não foi autorizado a enviar e-mail (rode qualquer função no editor uma vez após colar o `Codigo.gs` novo). Veja **Execuções** no editor para o erro exato. Por segurança a tela sempre diz "código enviado", mesmo sem e-mail cadastrado. |
+| Código mestre do admin sempre diz "código incorreto" | A propriedade `CODIGO_MESTRE_ADMIN` não está configurada (Parte 2, seção opcional), ou o valor digitado não bate exatamente com o salvo nas Propriedades do script. |
 
 ---
 

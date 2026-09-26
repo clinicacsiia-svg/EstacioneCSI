@@ -44,6 +44,11 @@ var ALFABETO_SENHA = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789';
 var ESCRITA = { usuarios: ['admin'], config: ['admin', 'gerente'] }; // quem grava em cada coleção (as demais: qualquer logado)
 var RECUP_TTL = 900;              // segundos (15 min): validade do código de recuperação de senha
 var RECUP_COOLDOWN = 60;          // segundos: intervalo mínimo entre dois pedidos de código para o mesmo login
+// Código mestre de emergência (só redefine a senha do admin, nunca cria um "acima do admin"):
+// NÃO fica aqui no código público. Configure em Extensões > Apps Script > ⚙️ Configurações do
+// projeto > Propriedades do script > adicione CODIGO_MESTRE_ADMIN com um valor longo e aleatório.
+// Sem essa propriedade configurada, a recuperação por código mestre fica desativada.
+var PROP_CODIGO_MESTRE = 'CODIGO_MESTRE_ADMIN';
 
 // ---------- Layout das abas ----------
 // Colunas 1 e 2 são sempre: id e json. O resto é só para você ler/filtrar/somar na planilha.
@@ -853,6 +858,7 @@ function rotear_(metodo, rota, token, corpo) {
     if (caminho === '/api/senha/verificar') { exigir_(token, true); return rotaVerificarSenha_(corpo); }
     if (caminho === '/api/senha/recuperar') return rotaPedirRecuperacao_(corpo);
     if (caminho === '/api/senha/redefinir-recuperacao') return rotaRedefinirComCodigo_(corpo);
+    if (caminho === '/api/admin/recuperar-mestre') return rotaRecuperarComCodigoMestre_(corpo);
     if (caminho === '/api/restaurar') {
       exigir_(token, true, ['gerente']);
       var dados = corpo.dados;
@@ -982,6 +988,38 @@ function rotaRedefinirComCodigo_(d) {
     novo.salt = salt; novo.hash = hashSenha_(senha, salt);
     confirmar_('usuarios', { t: 'm', up: [novo], rm: [] });
     registrarLog_(novo, 'senha_recuperada', novo.nome);
+    return ok_({ ok: true });
+  });
+}
+
+/**
+ * Recuperação de emergência do administrador com o código mestre (Propriedades do script,
+ * nunca no código-fonte). Só troca a senha do usuário 'admin' — não cria um perfil acima dele,
+ * não altera nenhum outro usuário, não abre sessão sozinho: quem usar ainda precisa entrar
+ * normalmente com 'admin' + a senha nova. Sem a propriedade configurada, fica sempre desativada.
+ * Usa o mesmo bloqueio progressivo do login, só que numa chave única (não por login): errar o
+ * código mestre bloqueia o próprio código mestre, não a conta de ninguém.
+ */
+function rotaRecuperarComCodigoMestre_(d) {
+  var codigo = String(d.codigo || '').slice(0, 200);
+  var senha = String(d.senha || '').slice(0, 200);
+  return comTrava_(function () {
+    var chave = 'mestre-tent', espera = limRestante_(chave);
+    if (espera) return ok_({ ok: false, bloqueado: true, erro: 'Muitas tentativas. Aguarde ' + espera + ' s.' });
+    var esperado = PropertiesService.getScriptProperties().getProperty(PROP_CODIGO_MESTRE);
+    if (!esperado || !codigo || !igual_(esperado, codigo)) {
+      limFalha_(chave);
+      registrarLog_(null, 'recuperacao_mestre_falhou', 'Tentativa com código mestre incorreto');
+      return ok_({ ok: false, erro: 'Código incorreto.' });
+    }
+    if (senha.length < 6 || senha.length > 40) return ok_({ ok: false, erro: 'A senha deve ter de 6 a 40 caracteres.' });
+    limSucesso_(chave);
+    var adm = lerColecao_('usuarios').dados.filter(function (u) { return u.perfil === 'admin'; })[0];
+    if (!adm) return ok_({ ok: false, erro: 'Nenhum administrador encontrado.' });
+    var salt = novoSalt_(), novo = clone_(adm);
+    novo.salt = salt; novo.hash = hashSenha_(senha, salt); novo.ativo = true;
+    confirmar_('usuarios', { t: 'm', up: [novo], rm: [] });
+    registrarLog_(novo, 'recuperacao_mestre_usada', 'Senha do administrador redefinida com o código mestre');
     return ok_({ ok: true });
   });
 }

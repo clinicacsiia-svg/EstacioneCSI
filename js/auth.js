@@ -343,6 +343,18 @@
       return { ok: true };
     },
 
+    /**
+     * Recuperação de emergência do administrador com o código mestre (configurado pelo dono
+     * do sistema nas Propriedades do Apps Script, nunca no código). Só troca a senha do admin.
+     */
+    recuperarAdminComCodigoMestre: function (codigoMestre, novaSenha) {
+      var errSenha = Auth.validarNovaSenha(novaSenha); if (errSenha) return { ok: false, erro: errSenha };
+      var r = Dados.requisitar('POST', '/api/admin/recuperar-mestre', { codigo: String(codigoMestre || ''), senha: novaSenha });
+      if (r.status === 0) return { ok: false, erro: 'Não foi possível falar com o servidor. Confira a conexão.' };
+      if (!r.corpo || !r.corpo.ok) return { ok: false, bloqueado: !!(r.corpo && r.corpo.bloqueado), erro: (r.corpo && r.corpo.erro) || 'Não foi possível redefinir a senha.' };
+      return { ok: true };
+    },
+
     sair: function (porInatividade, semAcesso) {
       var u = Auth.atual();
       if (u) Auth.registrar(porInatividade ? 'logout_inatividade' : 'logout', u.nome);

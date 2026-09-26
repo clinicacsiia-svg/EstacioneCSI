@@ -96,7 +96,8 @@
         '<label class="rotulo" for="rec-usuario">Usuário</label>' +
         '<input id="rec-usuario" type="text" maxlength="30" autocapitalize="none" autocorrect="off" spellcheck="false" data-foco value="' + Ui.esc(loginInicial || '') + '">' +
         '<div class="dica erro" id="rec-erro1" role="alert"></div>' +
-        '<button type="button" class="btn btn-primario btn-bloco mt" id="rec-enviar" data-padrao="1">Enviar código</button>';
+        '<button type="button" class="btn btn-primario btn-bloco mt" id="rec-enviar" data-padrao="1">Enviar código</button>' +
+        '<button type="button" class="btn btn-link btn-bloco mt" id="rec-mestre-link">Sou o administrador e não tenho e-mail cadastrado</button>';
       var campo = Ui.$('#rec-usuario', corpo), erroP = Ui.$('#rec-erro1', corpo), btn = Ui.$('#rec-enviar', corpo);
       btn.onclick = function () {
         var login = campo.value.trim();
@@ -107,6 +108,7 @@
         if (!r.ok) { erroP.textContent = r.erro; return; }
         passoCodigo(login);
       };
+      Ui.$('#rec-mestre-link', corpo).onclick = passoMestre;
     }
 
     function passoCodigo(login) {
@@ -133,6 +135,35 @@
         m.fechar();
         Ui.toast('Senha redefinida! Já pode entrar com ela.', 'sucesso', 5000);
         campoUsuario.value = login; campoSenha.value = ''; campoSenha.focus();
+      };
+    }
+
+    /** Emergência: só quem tem o código mestre (guardado fora do site, nas Propriedades do
+     * Apps Script) consegue redefinir a senha do administrador por aqui. Nada além disso. */
+    function passoMestre() {
+      corpo.innerHTML =
+        '<p class="mudo" style="margin-top:0">Recuperação de emergência do administrador. Só funciona com o código mestre configurado pelo dono do sistema direto no Apps Script (fora do site) — use se não há e-mail de recuperação cadastrado.</p>' +
+        '<label class="rotulo" for="rec-mestre-cod">Código mestre</label>' +
+        '<input id="rec-mestre-cod" type="password" maxlength="80" autocomplete="off" data-foco>' +
+        '<label class="rotulo mt" for="rec-mestre-nova">Nova senha do administrador (6 a 40 caracteres)</label>' +
+        '<div class="campo-senha"><input id="rec-mestre-nova" type="password" maxlength="40" autocomplete="new-password">' +
+        '<button type="button" class="btn btn-contorno" id="rec-mestre-ver" aria-label="Mostrar senha">👁</button></div>' +
+        '<div class="dica erro" id="rec-mestre-erro" role="alert"></div>' +
+        '<button type="button" class="btn btn-primario btn-bloco mt" id="rec-mestre-confirmar" data-padrao="1">Redefinir senha do administrador</button>' +
+        '<button type="button" class="btn btn-link btn-bloco mt" id="rec-mestre-voltar">Voltar</button>';
+      var eCod = Ui.$('#rec-mestre-cod', corpo), eNova = Ui.$('#rec-mestre-nova', corpo), erroP = Ui.$('#rec-mestre-erro', corpo), btn = Ui.$('#rec-mestre-confirmar', corpo);
+      Ui.$('#rec-mestre-ver', corpo).onclick = function () { eNova.type = eNova.type === 'password' ? 'text' : 'password'; };
+      Ui.$('#rec-mestre-voltar', corpo).onclick = passoPedir;
+      btn.onclick = function () {
+        erroP.textContent = '';
+        if (!eCod.value) { erroP.textContent = 'Informe o código mestre.'; return; }
+        btn.disabled = true;
+        var r = Auth.recuperarAdminComCodigoMestre(eCod.value, eNova.value);
+        btn.disabled = false;
+        if (!r.ok) { erroP.textContent = r.erro; return; }
+        m.fechar();
+        Ui.toast('Senha do administrador redefinida! Já pode entrar com ela.', 'sucesso', 5000);
+        campoUsuario.value = 'admin'; campoSenha.value = ''; campoSenha.focus();
       };
     }
 
