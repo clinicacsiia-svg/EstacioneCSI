@@ -16,13 +16,12 @@
     else Auth.sair(false, true);
   }
 
-  /** Pontinho verde/vermelho + versão, mostrado sempre no rodapé da tela de login. */
+  /** Pontinho verde/vermelho (conexão com a planilha) + versão, sempre no rodapé da tela de login. */
   function rodapeStatus() {
     var conectado = !Dados.semServidor;
     return '<div class="login-status">' +
-      '<span class="ponto' + (conectado ? ' on' : '') + '" aria-hidden="true"></span> ' +
-      (conectado ? 'Conectado à planilha' : 'Sem conexão com a planilha') +
-      ' · v' + VERSAO + '</div>';
+      '<span class="ponto' + (conectado ? ' on' : '') + '" title="' + (conectado ? 'Conectado à planilha' : 'Sem conexão com a planilha') + '"></span>' +
+      ' v' + VERSAO + '</div>';
   }
 
   if (Dados.semServidor) {
