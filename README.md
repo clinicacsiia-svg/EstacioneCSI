@@ -16,7 +16,6 @@ css/  js/                                   estilo e lógica
 js/config.js                                endereço /exec do Apps Script (você preenche)
 js/api.js                                   como o site fala com o Google
 apps-script/Codigo.gs                       servidor: cole na planilha do Google
-apps-script/teste/                          testes com o Google simulado
 .github/workflows/publicar.yml              publica as telas no GitHub Pages a cada push
 ```
 
