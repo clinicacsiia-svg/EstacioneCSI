@@ -180,14 +180,6 @@ Além disso a planilha tem **Arquivo → Histórico de versões**.
 
 ---
 
-## Testes automáticos
+## Conferir se está tudo certo
 
-`apps-script/teste/teste.html` roda o `Codigo.gs`, o `api.js` e o `dados.js` de verdade contra uma simulação do Google (planilha, cache, trava, Drive): login, conflito de versão, sincronização, permissões, formula-injection, restauração etc.
-Para rodar (só precisa de qualquer servidor de arquivos estáticos; o Python serve para isso, mas não é parte do sistema), na pasta do projeto:
-
-```bash
-python -m http.server 8099
-```
-
-e abra `http://127.0.0.1:8099/apps-script/teste/teste.html`. O título da aba vira **PASSOU** ou **FALHOU**.
-A simulação não substitui um teste no Google de verdade: na Parte 5, faça login, registre um ticket e confira a linha na aba `tickets`.
+Não há suíte automática de testes neste repositório. Para conferir o sistema depois de qualquer mudança: na Parte 5, faça login, registre um ticket, receba o pagamento, busque e entregue o veículo, e confira as linhas nas abas `tickets`, `caixas` e `log` da planilha.
